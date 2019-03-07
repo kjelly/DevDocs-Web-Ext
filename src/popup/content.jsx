@@ -3,6 +3,33 @@ import browser from 'webextension-polyfill'
 import url from 'url'
 import classnames from 'classnames'
 import ky from 'ky'
+import _ from 'lodash'
+import { StorageLRU, asyncify } from 'storage-lru'
+
+const lru = new StorageLRU(asyncify(localStorage))
+
+function lruGetItem (key) {
+  return new Promise(function (resolve) {
+    lru.getItem(key, {json: false}, function (error, value) {
+      resolve(error ? '' : value)
+    })
+  })
+}
+
+function lruSetItem (key, value) {
+  return new Promise(function (resolve, reject) {
+    lru.setItem(key, value, {
+      json: false,
+      cacheControl: `max-age=${30/* day */ * 24/* hour */ * 60/* min */ * 60/* sec */}`
+    }, function (error) {
+      if (error) {
+        reject(error)
+      } else {
+        resolve()
+      }
+    })
+  })
+}
 
 export default function App ({location, history}) {
   const [loading, setLoading] = useState(false)
@@ -29,19 +56,17 @@ export default function App ({location, history}) {
   useEffect(() => {
     if (!contentUrl) return
 
-    let docContent
-    if (localStorage.cachedDocContentUrl === contentUrl) {
-      docContent = localStorage.cachedDocContent
-      setContent(docContent)
-    } else {
-      setLoading(true)
-    }
     (async () => {
+      let docContent = await lruGetItem(contentUrl)
+      if (docContent) {
+        setContent(docContent)
+      } else {
+        setLoading(true)
+      }
       docContent = await ky(contentUrl).text()
       setLoading(false)
       setContent(docContent)
-      localStorage.cachedDocContentUrl = contentUrl
-      localStorage.cachedDocContent = docContent
+      await lruSetItem(contentUrl, docContent)
     })()
   }, [contentUrl])
 
