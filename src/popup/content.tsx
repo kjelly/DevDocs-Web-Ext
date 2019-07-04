@@ -4,9 +4,9 @@ import url from 'url'
 import classnames from 'classnames'
 import ky from 'ky'
 import _ from 'lodash'
-import {lruGetItem, lruSetItem} from '../common/lru'
+import { lruGetItem, lruSetItem } from '../common/lru'
 
-export default function App ({location, history}) {
+export default function App ({ location, history }) {
   const [loading, setLoading] = useState(false)
   const [contentUrl, setContentUrl] = useState('')
   const [content, setContent] = useState('')
@@ -52,7 +52,7 @@ export default function App ({location, history}) {
   }, [content, doc])
 
   async function updateDoc () {
-    let scope = location.pathname.split('/')[1].split('~')[0]
+    const scope = location.pathname.split('/')[1].split('~')[0]
     if (!scope) return
     const contentDoc = await browser.runtime.sendMessage({
       action: 'get-content-doc',
@@ -79,7 +79,7 @@ export default function App ({location, history}) {
   }
 
   function onContentClick (e) {
-    let {target} = e
+    let { target } = e
     while (target.tagName !== 'A') {
       if (target === e.currentTarget) return
       target = target.parentElement
@@ -87,7 +87,7 @@ export default function App ({location, history}) {
     e.preventDefault()
     const href = target.getAttribute('href')
     if (href.startsWith('http://') || href.startsWith('https://')) {
-      browser.tabs.create({url: href})
+      browser.tabs.create({ url: href })
     } else {
       const currentUrl = history.location.pathname
       const targetUrl = url.resolve(currentUrl, href)
@@ -118,7 +118,7 @@ export default function App ({location, history}) {
           className={classnames(['_page', doc ? `_${doc.type}` : ''])}
           onClick={onContentClick}
           ref={pageRef}
-          dangerouslySetInnerHTML={{__html: content}} />
+          dangerouslySetInnerHTML={{ __html: content }} />
       </div>
     </div>
   )
